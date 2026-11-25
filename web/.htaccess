@@ -1,0 +1,6 @@
+# LatToText: strony i przykładowe pliki idą przez bramkę logowania (gate.php)
+DirectoryIndex index.php
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^(index\.html|przyklady\.html|api-docs\.html|przyklad-krotki\.pdf|przyklady-wzorow\.pdf)$ gate.php?f=$1 [L,QSA]
+</IfModule>

@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Równania i LaTeX – konwerter</title>
+<meta name="description" content="Zamień wzór zapisany jak w kalkulatorze na LaTeX albo LaTeX na zwykły zapis. Rozpoznaje też wzory ze zdjęć i skanów.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Jedna kolumna, zwykła kartka. Kontrasty sprawdzone pod WCAG 2.2 AA (tekst ≥ 4,5:1, obramowania ≥ 3:1). */
+:root {
+  --bg: #ffffff;
+  --ink: #16191f;
+  --muted: #4f5666;
+  --line: #767d8c;
+  --soft: #e3e6ec;
+  --accent: #1a3db0;
+  --code-bg: #f2f4f7;
+  --danger: #a0101c;
+  --ok: #1c6b34;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161b; --ink: #eceef2; --muted: #b1b7c4; --line: #8a92a3; --soft: #2c313b;
+    --accent: #a9bcff; --code-bg: #1d2129; --danger: #ffa4ab; --ok: #8fdca6; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 1.0625rem; line-height: 1.6;
+  padding: 2rem max(1rem, env(safe-area-inset-right, 0px)) 4rem max(1rem, env(safe-area-inset-left, 0px));
+}
+main { max-width: 46rem; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+h1 { font-size: clamp(1.75rem, 5vw, 2.25rem); line-height: 1.2; margin: 0; }
+h2 { font-size: 1.25rem; margin: 0 0 .5rem; }
+h3 { font-size: 1.0625rem; margin: 1.25rem 0 .5rem; }
+p { margin: 0; }
+p + p { margin-top: .75rem; }
+.lead { color: var(--muted); margin-top: .5rem; }
+.topnav { display: flex; gap: 1.25rem; justify-content: flex-end; margin-bottom: .5rem; }
+.topnav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.skip { position: absolute; left: -9999px; top: 1rem; background: var(--bg); color: var(--accent); padding: .5rem .75rem; z-index: 10; }
+.skip:focus { left: 1rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { font-weight: 600; padding: 0; margin-bottom: .5rem; }
+.mode { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.radio, .check { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; cursor: pointer; }
+.radio input, .check input { width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--accent); }
+
+.field { display: flex; flex-direction: column; gap: .5rem; }
+label.big { font-weight: 600; font-size: 1.25rem; }
+.hint { color: var(--muted); font-size: .9375rem; }
+textarea {
+  width: 100%; min-height: 9rem; resize: vertical; margin: 0; padding: .75rem;
+  font: 1.0625rem/1.6 var(--f-mono); color: var(--ink); background: var(--bg);
+  border: 2px solid var(--line); border-radius: 4px;
+}
+textarea:focus-visible { border-color: var(--accent); outline-offset: 0; }
+textarea[aria-invalid="true"] { border-color: var(--danger); }
+.drop-on textarea { border-style: dashed; border-color: var(--accent); }
+
+.buttons { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+button, .filebtn {
+  font: inherit; font-size: 1rem; min-height: 2.75rem; padding: .5rem 1rem; cursor: pointer;
+  border-radius: 4px; border: 2px solid var(--ink); background: var(--bg); color: var(--ink);
+  display: inline-flex; align-items: center;
+}
+button.primary { background: var(--ink); color: var(--bg); }
+button:hover, .filebtn:hover { border-color: var(--accent); color: var(--accent); }
+button.primary:hover { background: var(--accent); color: var(--bg); }
+button[disabled] { opacity: .6; cursor: progress; }
+#scan-file:focus-visible + .filebtn, #camera-file:focus-visible + .filebtn { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* Aparat tylko na urządzeniach dotykowych (telefon, tablet) */
+.filebtn.camera, #camera-file { display: none; }
+@media (pointer: coarse) {
+  .filebtn.camera { display: inline-flex; background: var(--ink); color: var(--bg); }
+  #camera-file { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+
+.status { font-size: .9375rem; color: var(--muted); }
+.status.ok { color: var(--ok); }
+.status.err { color: var(--danger); }
+#alert:empty { display: none; }
+#alert { font-weight: 600; }
+
+.output { display: flex; flex-direction: column; gap: .75rem; border-top: 1px solid var(--soft); padding-top: 1.5rem; }
+.preview { min-height: 4.5rem; display: flex; align-items: center; overflow-x: auto; font-size: 1.15rem; }
+.preview .placeholder { color: var(--muted); font-size: 1rem; }
+.preview mjx-container { margin: 0 !important; }
+.notes { margin: 0; padding: .5rem .75rem; list-style: none; color: var(--muted); border-left: 4px solid var(--line); font-size: .95rem; }
+.notes::before { content: "Uwagi"; display: block; font-weight: 600; color: var(--ink); }
+.errors { margin: 0; padding: .5rem .75rem; list-style: none; color: var(--danger); border-left: 4px solid var(--danger); }
+pre {
+  margin: 0; padding: .75rem 1rem; background: var(--code-bg); border-radius: 4px;
+  font: .9375rem/1.6 var(--f-mono); white-space: pre-wrap; word-break: break-word; min-height: 3rem;
+}
+.label { font-weight: 600; }
+
+details { border-top: 1px solid var(--soft); padding-top: 1rem; }
+summary { cursor: pointer; font-weight: 600; font-size: 1.125rem; min-height: 2.75rem; display: flex; align-items: center; gap: .5rem; }
+summary::marker { color: var(--muted); }
+details[open] > summary { margin-bottom: .75rem; }
+.settings { display: flex; flex-direction: column; gap: .5rem; }
+.settings label.sel { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-height: 2.75rem; }
+select { font: inherit; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: 4px; padding: .375rem .5rem; min-height: 2.75rem; }
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9375rem; margin-bottom: 1rem; }
+caption { text-align: left; font-weight: 600; padding: .5rem 0; }
+th { text-align: left; font-weight: 600; padding: .375rem .75rem .375rem 0; border-bottom: 2px solid var(--line); }
+td { padding: .375rem .75rem .375rem 0; border-bottom: 1px solid var(--soft); vertical-align: middle; }
+td .ins {
+  border: 0; padding: .25rem 0; min-height: 1.5rem; background: none; color: var(--accent);
+  font: .9375rem/1.5 var(--f-mono); text-align: left; text-decoration: underline; text-underline-offset: 3px; word-break: break-word;
+}
+td.math { white-space: nowrap; }
+ul.plain { margin: .5rem 0 0; padding-left: 1.25rem; }
+ul.plain li + li { margin-top: .375rem; }
+code { font-family: var(--f-mono); font-size: .92em; background: var(--code-bg); padding: .05rem .3rem; border-radius: 3px; }
+pre code { background: none; padding: 0; }
+.api-link { border-top: 1px solid var(--soft); padding-top: 1rem; }
+.howto { border-top: 1px solid var(--soft); padding-top: 1.5rem; }
+.steps { margin: .5rem 0 0; padding-left: 1.4rem; display: flex; flex-direction: column; gap: .5rem; }
+.filebtn { text-decoration: none; }
+.linkbtn { background: none; border: 0; padding: 0; min-height: 1.5rem; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font: inherit; cursor: pointer; display: inline; }
+.linkbtn:hover { color: var(--accent); border: 0; }
+button[disabled].img-action { opacity: .45; cursor: not-allowed; }
+.upload { border: 2px solid var(--ink); border-radius: 6px; padding: 1.25rem 1.5rem; width: min(34rem, calc(100vw - 2rem)); background: var(--bg); color: var(--ink); }
+.upload[open] { display: flex; flex-direction: column; gap: .3rem; }
+.upload::backdrop { background: rgb(0 0 0 / .45); }
+.upload h2 { margin: 0 0 .5rem; font-size: 1.2rem; }
+.upload .prow { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-weight: 600; }
+.upload .pct { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.upload progress { width: 100%; height: .9rem; accent-color: var(--accent); }
+.upload .hint { margin: 0 0 .4rem; }
+.upload .abort { align-self: flex-start; margin-top: .5rem; }
+@media (prefers-reduced-motion: reduce) { .upload progress:indeterminate { animation: none; } }
+footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--soft); padding-top: 1rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#eq">Przejdź do pola wzoru</a>
+<noscript><p style="padding:1rem;border:2px solid currentColor">Konwerter działa w przeglądarce i potrzebuje włączonego JavaScriptu. API opisane w <a href="llms.txt">llms.txt</a> działa bez niego.</p></noscript>
+<main>
+  <header>
+    <nav aria-label="Główna" class="topnav"><a href="przyklady.html">Przykłady</a> <a href="api.php">API</a> <a href="konto/">Moje konto</a></nav>
+    <h1>Równania i LaTeX</h1>
+    <p class="lead">Wpisz wzór jak w kalkulatorze, wklej LaTeX albo pokaż zdjęcie kartki.</p>
+  </header>
+
+  <fieldset>
+    <legend>Kierunek</legend>
+    <div class="mode">
+      <label class="radio"><input type="radio" name="mode" value="to" id="mode-to" checked> Zwykły zapis <span aria-hidden="true">→</span><span class="sr">na</span> LaTeX</label>
+      <label class="radio"><input type="radio" name="mode" value="from" id="mode-from"> LaTeX <span aria-hidden="true">→</span><span class="sr">na</span> zwykły zapis</label>
+    </div>
+  </fieldset>
+
+  <div class="field" id="drop">
+    <label class="big" for="eq" id="eq-label">Wzór</label>
+    <p class="hint" id="eq-hint"></p>
+    <textarea id="eq" spellcheck="false" autocomplete="off" autocapitalize="off" translate="no" aria-describedby="eq-hint errors" aria-keyshortcuts="Meta+Enter Control+Enter"></textarea>
+    <div class="buttons">
+      <button type="button" class="primary" id="convert" aria-describedby="convert-hint">Konwertuj</button>
+      <input type="file" id="camera-file" class="sr" accept="image/*" capture="environment" aria-describedby="scan-hint">
+      <label for="camera-file" class="filebtn camera" id="camera-btn">Zrób zdjęcie kartki</label>
+      <input type="file" id="scan-file" class="sr" accept="image/*,application/pdf" aria-describedby="scan-hint">
+      <label for="scan-file" class="filebtn" id="scan-btn">Odczytaj z pliku</label>
+      <button type="button" id="clear" aria-describedby="clear-hint">Wyczyść</button>
+      <span class="sr" id="clear-hint">Usuwa całą treść pola wzoru.</span>
+    </div>
+    <p class="hint" id="convert-hint">Skrót: Cmd+Enter albo Ctrl+Enter.</p>
+    <dialog class="upload" id="upload-box" aria-labelledby="upload-box-h">
+      <h2 id="upload-box-h">Odczyt pliku</h2>
+      <div class="prow"><label for="up-bar">Wysyłanie pliku</label><span class="pct" id="up-bar-pct" aria-hidden="true">0%</span></div>
+      <progress id="up-bar" max="100" value="0" aria-describedby="up-bar-info"></progress>
+      <p class="hint" id="up-bar-info"></p>
+      <div class="prow"><label for="ai-bar">Odczyt przez AI <span class="hint">(szacunek)</span></label><span class="pct" id="ai-bar-pct" aria-hidden="true">czeka</span></div>
+      <progress id="ai-bar" max="100" value="0" aria-describedby="ai-bar-info"></progress>
+      <p class="hint" id="ai-bar-info"></p>
+      <button type="button" class="abort" id="upload-box-abort">Przerwij</button>
+    </dialog>
+    <p class="hint" id="scan-hint">Zdjęcie kartki odczytuje AI (Claude API). Możesz je też przeciągnąć na pole, wkleić albo wysłać mailem na latex@dpoczta.pl. <button type="button" class="linkbtn" id="sample-scan" data-file="przyklad-krotki.pdf">Wypróbuj na przykładowym pliku</button></p>
+  </div>
+
+  <section class="output" id="output" aria-labelledby="out-h" aria-busy="false">
+    <h2 id="out-h">Wynik</h2>
+    <div class="preview" id="preview" aria-hidden="true"><span class="placeholder">Ładuję podgląd…</span></div>
+    <p id="speech-p"><span class="label">Odczyt słowny: </span><span id="speech"></span></p>
+    <ul class="errors" id="errors" aria-label="Błędy we wzorze" hidden></ul>
+    <ul class="notes" id="notes" aria-label="Uwagi do konwersji" hidden></ul>
+    <p class="label" id="code-h">Kod LaTeX</p>
+    <pre id="code" aria-labelledby="code-h" tabindex="0" translate="no"></pre>
+    <div class="buttons">
+      <button type="button" class="primary" id="copy">Kopiuj kod LaTeX</button>
+      <button type="button" class="img-action" id="copy-img" aria-describedby="img-hint" disabled>Kopiuj obraz do Worda</button>
+      <button type="button" class="img-action" id="dl-svg" aria-describedby="img-hint" disabled>Pobierz SVG</button>
+      <button type="button" class="img-action" id="dl-pdf" aria-describedby="img-hint" disabled>Pobierz PDF</button>
+    </div>
+    <p class="hint" id="img-hint">Obraz wzoru: wklej do Worda, Google Docs albo prezentacji. SVG i PDF są wektorowe, więc nie tracą ostrości.</p>
+    <p class="status" id="status" role="status"></p>
+    <p class="sr" id="err-live" aria-live="polite"></p>
+    <p class="status err" id="alert" role="alert"></p>
+  </section>
+
+  <section class="output" id="doc-out" aria-labelledby="doc-h" hidden>
+    <h2 id="doc-h" tabindex="-1">Cały dokument w LaTeX-u</h2>
+    <p class="hint">Tekst i wzory przepisane przez AI. Sprawdź niewyraźne miejsca przed użyciem.</p>
+    <pre id="doc-code" aria-labelledby="doc-h" tabindex="0" translate="no"></pre>
+    <div class="buttons">
+      <button type="button" class="primary" id="doc-copy">Kopiuj cały dokument</button>
+      <button type="button" id="doc-dl">Pobierz .tex</button>
+      <button type="button" id="doc-close">Zamknij</button>
+    </div>
+  </section>
+
+  <details id="settings-box">
+    <summary>Ustawienia wyniku</summary>
+    <div class="settings">
+      <label class="sel" for="delim">Ograniczniki wokół kodu
+        <select id="delim">
+          <option value="none">bez</option>
+          <option value="inline">$ … $</option>
+          <option value="display">$$ … $$</option>
+          <option value="bracket">\[ … \]</option>
+          <option value="equation">equation</option>
+        </select>
+      </label>
+      <label class="sel" for="mul">Znak mnożenia dla *
+        <select id="mul">
+          <option value="cdot">kropka (a · b)</option>
+          <option value="times">krzyżyk (a × b)</option>
+          <option value="none">bez znaku (ab)</option>
+        </select>
+      </label>
+      <label class="check" for="align"><input type="checkbox" id="align" checked> Wyrównuj kolejne linie do znaku =</label>
+      <label class="check" for="comma"><input type="checkbox" id="comma"> Polski przecinek dziesiętny (3,14)</label>
+    </div>
+  </details>
+
+  <details>
+    <summary>Ściąga: jak wpisywać wzory</summary>
+    <p class="hint">Kliknij zapis w pierwszej kolumnie, żeby dopisać go do pola. Znaki Unicode (≤, ±, √, π, α, ², °) też działają.</p>
+    <div id="cheats"></div>
+    <h3>Zasady</h3>
+    <ul class="plain">
+      <li><code>a/b</code> zawsze robi ułamek; nawiasy wokół licznika i mianownika znikają: <code>(x+1)/(x-1)</code>.</li>
+      <li>Cyfra tuż po literze to indeks dolny: <code>x1</code>. Dłuższy indeks: <code>x_(n+1)</code>.</li>
+      <li>Litery obok siebie to iloczyn: <code>4ac</code>. Nazwy funkcji i liter greckich są rozpoznawane także bez spacji: <code>sinx</code>, <code>2alpha</code>.</li>
+      <li><code>n!=6</code> to silnia. „Różne od” pisz ze spacją, <code>a != b</code>, albo jako <code>a &lt;&gt; b</code> lub ≠.</li>
+      <li>Ułamki dziesiętne wpisuj z kropką, bo przecinek oddziela argumenty funkcji.</li>
+      <li>Kilka linii zaczynających się od <code>=</code> składa się w jeden wyrównany ciąg przekształceń.</li>
+    </ul>
+  </details>
+
+  <footer>
+    <p><strong>LatToText</strong> · <a href="https://ziemowitgil.pl/latex/">strona projektu</a> · Projekt i wykonanie: <a href="https://ziemowitgil.pl/">Ziemowit Gil</a></p>
+  </footer>
+</main>
+
+<script>
+window.MathJax = {
+  startup: {
+    typeset: false,
+    ready() { MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => window.__mjReady && window.__mjReady()); }
+  },
+  // Bez ukrytej kopii MathML: tekst dla czytników daje „Odczyt słowny”, a kopia bez stylów pokazywała się drugi raz
+  options: { enableMenu: false, enableAssistiveMml: false },
+  svg: { fontCache: 'local' }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" async></script>
+<script src="odczyt.js"></script>
+<script>
+<!--CONVERTER-->
+</script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const input = $('eq'), codeEl = $('code'), prev = $('preview'), errEl = $('errors'), status = $('status'), speechEl = $('speech');
+  const KEY = 'eq2latex:v2';
+
+  const TEXT = {
+    to: {
+      label: 'Wzór w zwykłym zapisie',
+      hint: 'Na przykład (x+1)/(x-1), sqrt(2), sum(k=1, n, k). Każda linia to osobne równanie.',
+      out: 'Kod LaTeX', copy: 'Kopiuj kod LaTeX',
+      sample: 'x = (-b +- sqrt(b^2 - 4ac)) / (2a)'
+    },
+    from: {
+      label: 'Kod LaTeX',
+      hint: 'Wklej kod LaTeX, także z $…$, \\[…\\] albo \\begin{aligned}. Dostaniesz zapis jak w kalkulatorze.',
+      out: 'Zwykły zapis', copy: 'Kopiuj zwykły zapis',
+      sample: '\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e'
+    }
+  };
+
+  const CHEATS = [
+    ['Podstawy', [
+      ['x^2 + y_1', 'potęga i indeks'], ['a1 + a2', 'cyfra po literze to indeks'], ['(a+b)/(c-d)', 'ułamek'],
+      ['2*x', 'jawne mnożenie'], ['e^(-x/2)', 'wykładnik w nawiasie'], ['|x|, n!, f\'(x)', 'moduł, silnia, pochodna'],
+      ['"gdy " x > 0', 'zwykły tekst w cudzysłowie']
+    ]],
+    ['Pierwiastki i nawiasy', [
+      ['sqrt(x)', 'pierwiastek kwadratowy'], ['root(3, x)', 'pierwiastek n-tego stopnia'], ['floor(x) + ceil(y)', 'podłoga i sufit']
+    ]],
+    ['Relacje i znaki', [
+      ['a <= b, c >= d', 'nierówności'], ['a != b', 'różne od'], ['x ~= 3.14', 'w przybliżeniu'], ['a +- b', 'plus minus'],
+      ['p => q, p <=> q', 'implikacja i równoważność'], ['x in RR', 'należy do zbioru'], ['a mod n', 'reszta z dzielenia']
+    ]],
+    ['Funkcje', [
+      ['sin^2 x', 'potęga funkcji'], ['tg alpha + ctg beta', 'polskie tg i ctg'], ['log_2(8) = 3', 'logarytm o podstawie'],
+      ['ln x, exp(x)', 'logarytm naturalny'], ['NWD(12, 18) = 6', 'NWD i NWW']
+    ]],
+    ['Sumy, całki, granice', [
+      ['sum(k=1, n, k)', 'suma: od, do, wyraz'], ['prod(i=1, n, i) = n!', 'iloczyn'], ['int(f(x), x)', 'całka nieoznaczona'],
+      ['int(0, 1, x^2, x)', 'całka: od, do, funkcja, zmienna'], ['lim(x->0, sin(x)/x)', 'granica'], ['diff(f, x)', 'pochodna'],
+      ['pdiff(f, y, 2)', 'pochodna cząstkowa rzędu 2']
+    ]],
+    ['Wektory, macierze, symbole', [
+      ['vec(v) = vec(AB)', 'wektor'], ['bar(x), hat(p)', 'kreska i daszek'], ['binom(n, k)', 'symbol Newtona'],
+      ['mat(1, 0; 0, 1)', 'macierz, średnik dzieli wiersze'], ['alpha + beta = pi', 'litery greckie'],
+      ['Delta = b^2 - 4ac', 'wielkie litery greckie'], ['30deg, inf', 'stopnie, nieskończoność']
+    ]]
+  ];
+
+  let mode = 'to';
+  const drafts = { to: TEXT.to.sample, from: TEXT.from.sample };
+  let mjReady = false, renderSeq = 0, current = '', errT, lastErr = '', st;
+
+  // Sukcesy i postęp: role=status (grzecznie). Błędy: role=alert (od razu). WCAG 4.1.3.
+  const alertEl = $('alert');
+  const say = (msg, kind = '') => {
+    clearTimeout(st);
+    if (kind === 'err') { status.textContent = ''; alertEl.textContent = ''; setTimeout(() => { alertEl.textContent = msg; }, 50); return; }
+    alertEl.textContent = '';
+    status.textContent = msg; status.className = 'status' + (kind ? ' ' + kind : '');
+    st = setTimeout(() => { status.textContent = ''; }, 6000);
+  };
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
+  const save = () => {
+    drafts[mode] = input.value;
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ mode, drafts, delim: $('delim').value, mul: $('mul').value, align: $('align').checked, comma: $('comma').checked }));
+    } catch {}
+  };
+
+  function wrap(tex, how) {
+    if (!tex) return '';
+    return { inline: `$${tex}$`, display: `$$${tex}$$`, bracket: `\\[${tex}\\]`, equation: `\\begin{equation}\n${tex}\n\\end{equation}` }[how] || tex;
+  }
+
+  async function renderMath(el, tex, seq) {
+    if (!mjReady) return;
+    try {
+      MathJax.texReset();
+      const node = await MathJax.tex2svgPromise(tex, { display: true });
+      if (seq != null && seq !== renderSeq) return;
+      node.setAttribute('aria-hidden', 'true');
+      node.removeAttribute('tabindex');
+      el.replaceChildren(node);
+      if (el === prev) setImgButtons(!!node.querySelector('svg'));
+    } catch {
+      el.textContent = 'Nie udało się narysować podglądu.';
+    }
+  }
+
+  function applyMode() {
+    const t = TEXT[mode];
+    $('eq-label').textContent = t.label;
+    $('eq-hint').textContent = t.hint;
+    $('code-h').textContent = t.out;
+    $('copy').textContent = t.copy;
+    $('settings-box').hidden = mode === 'from';
+  }
+
+  function update() {
+    let tex = '', out = '', speech = '', errors = [], notes = [];
+    if (mode === 'to') {
+      const r = Conv.convert(input.value, { mul: $('mul').value, align: $('align').checked, comma: $('comma').checked });
+      tex = r.latex; out = wrap(r.latex, $('delim').value); speech = r.speech; errors = r.errors;
+    } else {
+      const r = Conv.fromLatex(input.value);
+      out = r.text; speech = r.speech; errors = r.errors; notes = r.warnings || [];
+      // Podgląd zawsze z oryginalnego LaTeX-a — nieznane polecenia nie blokują wyniku
+      tex = r.latex;
+    }
+    current = out;
+    codeEl.textContent = out || '…';
+    speechEl.textContent = speech || 'brak wzoru';
+    errEl.replaceChildren(...errors.map(e => {
+      const li = document.createElement('li');
+      li.textContent = `Linia ${e.line}${e.col ? `, znak ${e.col}` : ''}: ${e.msg}`;
+      return li;
+    }));
+    errEl.hidden = !errors.length;
+    const notesEl = $('notes');
+    notesEl.replaceChildren(...notes.map(n => { const li = document.createElement('li'); li.textContent = (n.line ? `Linia ${n.line}: ` : '') + n.msg; return li; }));
+    notesEl.hidden = !notes.length;
+    input.setAttribute('aria-invalid', errors.length ? 'true' : 'false');
+    clearTimeout(errT);
+    const msg = errors.map(e => `Błąd w linii ${e.line}: ${e.msg}`).join('. ');
+    errT = setTimeout(() => { if (msg !== lastErr) { $('err-live').textContent = msg; lastErr = msg; } }, 1500);
+    const seq = ++renderSeq;
+    if (!tex) { prev.innerHTML = '<span class="placeholder">Tu pojawi się wzór.</span>'; setImgButtons(false); }
+    else if (mjReady) renderMath(prev, tex, seq);
+    save();
+  }
+
+  let t;
+  const schedule = () => { clearTimeout(t); t = setTimeout(update, 90); };
+
+  function setMode(m, value) {
+    if (m !== mode) { drafts[mode] = input.value; mode = m; }
+    $('mode-' + m).checked = true;
+    applyMode();
+    input.value = value ?? drafts[m] ?? '';
+    update();
+  }
+
+  function insert(text) {
+    if (mode !== 'to') setMode('to');
+    const v = input.value.replace(/\s+$/, '');
+    input.value = v ? v + '\n' + text : text;
+    update();
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    say('Dopisano do pola: ' + text, 'ok');
+  }
+
+  // Ściąga
+  const cheatMath = [];
+  CHEATS.forEach(([title, rows]) => {
+    const wrapEl = document.createElement('div'); wrapEl.className = 'scroll';
+    const tbl = document.createElement('table');
+    const cap = document.createElement('caption'); cap.textContent = title; tbl.appendChild(cap);
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th scope="col">Wpisujesz</th><th scope="col">Wynik</th><th scope="col">Co to jest</th></tr>';
+    tbl.appendChild(thead);
+    const tb = document.createElement('tbody');
+    rows.forEach(([src, note]) => {
+      const tr = document.createElement('tr');
+      const c1 = document.createElement('td');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'ins'; b.textContent = src;
+      b.setAttribute('aria-label', `Wstaw ${src}`);
+      b.addEventListener('click', () => insert(src));
+      c1.appendChild(b);
+      const c2 = document.createElement('td'); c2.className = 'math';
+      const r = Conv.convert(src, { align: false });
+      const vis = document.createElement('span'); vis.setAttribute('aria-hidden', 'true'); vis.textContent = r.latex;
+      const sr = document.createElement('span'); sr.className = 'sr'; sr.textContent = r.speech;
+      c2.append(vis, sr);
+      cheatMath.push([vis, r.latex]);
+      const c3 = document.createElement('td'); c3.textContent = note;
+      tr.append(c1, c2, c3); tb.appendChild(tr);
+    });
+    tbl.appendChild(tb); wrapEl.appendChild(tbl); $('cheats').appendChild(wrapEl);
+  });
+
+  // ---------- Dwa paski: wysyłanie (prawdziwy procent) i odczyt przez AI (szacunek) ----------
+  const P = {
+    box: $('upload-box'), up: $('up-bar'), upPct: $('up-bar-pct'), upInfo: $('up-bar-info'),
+    ai: $('ai-bar'), aiPct: $('ai-bar-pct'), aiInfo: $('ai-bar-info'), tick: null,
+  };
+  const mb = b => (b / 1048576).toLocaleString('pl-PL', { maximumFractionDigits: 2 });
+  function progStart(file) {
+    clearInterval(P.tick);
+    if (!P.box.open) P.box.showModal();
+    P.up.value = 0; P.upPct.textContent = '0%';
+    P.upInfo.textContent = file ? `${file.name} · ${mb(file.size)} MB` : 'Zapytanie';
+    P.ai.value = 0; P.aiPct.textContent = 'czeka'; P.aiInfo.textContent = '';
+  }
+  function progUpload(loaded, total) {
+    const pct = Math.round(loaded / total * 100);
+    P.up.value = pct; P.upPct.textContent = pct + '%';
+    P.upInfo.textContent = `Wysłano ${mb(loaded)} z ${mb(total)} MB`;
+  }
+  function progAi(file, announce) {
+    P.up.value = 100; P.upPct.textContent = '100% ✓';
+    P.upInfo.textContent = file ? `Wysłano ${mb(file.size)} MB` : 'Wysłano';
+    announce('Plik wysłany w 100%. AI odczytuje wzory.');
+    const isPdf = file && file.type === 'application/pdf';
+    const size = file ? file.size : 50000;
+    const expected = Math.min(150, (isPdf ? 12 : 10) + size / 1024 / (isPdf ? 12 : 60));
+    const stages = [[0, 'czyta plik'], [35, 'przepisuje wzory'], [75, 'układa wynik']];
+    const t0 = Date.now();
+    let last = '';
+    const show = () => {
+      const sec = (Date.now() - t0) / 1000;
+      const pct = Math.min(95, Math.round(95 * (1 - Math.exp(-sec / (expected / 2.2)))));
+      P.ai.value = pct; P.aiPct.textContent = pct + '%';
+      const stage = stages.filter(([f]) => pct >= f).pop()[1];
+      P.aiInfo.textContent = `AI ${stage} · ${Math.round(sec)} s, zwykle ok. ${Math.round(expected)} s`;
+      if (stage !== last && last) announce('AI ' + stage + '.');
+      last = stage;
+    };
+    show();
+    P.tick = setInterval(show, 500);
+  }
+  function progDone() {
+    clearInterval(P.tick);
+    P.up.value = 100; P.upPct.textContent = '100% ✓';
+    P.ai.value = 100; P.aiPct.textContent = '100% ✓';
+    P.aiInfo.textContent = 'Gotowe';
+  }
+  function progHide() { clearInterval(P.tick); P.tick = null; if (P.box.open) P.box.close(); P.xhr = null; }
+  // Przerwij / Esc: zatrzymuje wysyłanie i odczyt
+  const abortUpload = () => { if (P.xhr) P.xhr.abort(); };
+  $('upload-box-abort').addEventListener('click', abortUpload);
+  P.box.addEventListener('cancel', e => { e.preventDefault(); abortUpload(); });
+  const hideProgress = progHide;
+  function uploadWithProgress(fd, file) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'api.php');
+      xhr.setRequestHeader('X-Konwerter', '1');
+      xhr.responseType = 'json';
+      xhr.timeout = 180000;
+      P.xhr = xhr;
+      progStart(file);
+      xhr.upload.onprogress = e => { if (e.lengthComputable) progUpload(e.loaded, e.total); };
+      xhr.upload.onload = () => progAi(file, m => say(m));
+      xhr.onload = () => { progDone(); resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data: xhr.response || {} }); };
+      xhr.onerror = () => reject(new Error('Brak połączenia z serwerem.'));
+      xhr.onabort = () => reject(new Error('Przerwano odczyt. Nic nie zostało zapisane.'));
+      xhr.ontimeout = () => reject(new Error('Serwer nie odpowiedział na czas.'));
+      xhr.send(fd);
+    });
+  }
+
+
+  // Rozpoznawanie skanów
+  const scanLabel = $('scan-btn');
+  let busy = false;
+  async function scan(file) {
+    if (!file) return;
+    const okTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
+    if (!okTypes.includes(file.type)) { say('Ten plik nie jest obrazem ani PDF-em. Wybierz JPG, PNG, WEBP, GIF albo PDF.', 'err'); return; }
+    if (file.size > 5 * 1024 * 1024) { say('Plik jest za duży. Limit to 5 MB.', 'err'); return; }
+    if (busy) { say('Poczekaj, poprzedni odczyt jeszcze trwa.'); return; }
+    const choice = await LatexRead.ask(file);
+    if (!choice) { say('Anulowano odczyt. Nic nie zostało wysłane.'); return; }
+    const readMode = choice.mode;
+    const fd = new FormData();
+    fd.append('action', 'scan');
+    fd.append('plik', file, file.name || 'skan');
+    fd.append('only_math', readMode === 'math' ? '1' : '0');
+    if (choice.pages) fd.append('pages', choice.pages);
+    if (busy) { say('Poczekaj, poprzedni odczyt jeszcze trwa.'); return; }
+    busy = true;
+    scanLabel.setAttribute('aria-disabled', 'true');
+    $('camera-btn').setAttribute('aria-disabled', 'true');
+    $('output').setAttribute('aria-busy', 'true');
+    say('Wysyłam plik ' + (file.name || '') + ' do odczytu.');
+    try {
+      const res = await uploadWithProgress(fd, file);
+      const data = res.data;
+      if (!res.ok || !data.latex) throw new Error(data.error || `Serwer odpowiedział błędem ${res.status}.`);
+      if (data.mode === 'document') {
+        showDocument(data.latex, file.name || 'dokument');
+        say('Przepisano cały dokument do LaTeX-a. Wynik jest w sekcji Cały dokument.', 'ok');
+        return;
+      }
+      setMode('from', data.latex);
+      input.focus();
+      const pagesNote = data.pages_read ? ` Odczytano strony ${data.pages_read.join(', ')} z ${data.page_count}.` : '';
+      say(`Odczytano wzór.${pagesNote} Kod LaTeX jest w polu, zwykły zapis w wyniku. Odczyt słowny: ${data.speech || ''}. Sprawdź niewyraźne miejsca.`, 'ok');
+    } catch (e) {
+      if (/^Przerwano/.test(e.message)) say(e.message);
+      else say('Nie udało się rozpoznać wzoru. ' + e.message, 'err');
+    } finally {
+      busy = false;
+      hideProgress();
+      scanLabel.removeAttribute('aria-disabled');
+      $('camera-btn').removeAttribute('aria-disabled');
+      $('output').setAttribute('aria-busy', 'false');
+      $('scan-file').value = '';
+    }
+  }
+  $('scan-file').addEventListener('change', e => scan(e.target.files[0]));
+  // Przykładowy plik: pobieramy PDF ze strony i wysyłamy go do odczytu jak zwykły plik
+  $('sample-scan').addEventListener('click', async e => {
+    const name = e.currentTarget.dataset.file;
+    try {
+      const blob = await (await fetch(name)).blob();
+      await scan(new File([blob], name, { type: 'application/pdf' }));
+      $('eq').scrollIntoView({ block: 'center' });
+    } catch { say('Nie udało się pobrać przykładowego pliku. Odśwież stronę i spróbuj ponownie.', 'err'); }
+  });
+  $('camera-file').addEventListener('change', e => { scan(e.target.files[0]); e.target.value = ''; });
+  const drop = $('drop');
+  drop.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); drop.classList.add('drop-on'); } });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drop-on'));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    drop.classList.remove('drop-on');
+    if (f) { e.preventDefault(); scan(f); }
+  });
+  input.addEventListener('paste', e => {
+    const f = [...(e.clipboardData?.files || [])][0];
+    if (f && f.type.startsWith('image/')) { e.preventDefault(); scan(f); }
+  });
+
+  // ---------- Obraz wzoru: kopiowanie do Worda, SVG, PDF ----------
+  const EX = 8;
+  function formulaSvg() {
+    const svg = prev.querySelector('svg');
+    if (!svg) return null;
+    const c = svg.cloneNode(true);
+    c.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    ['aria-hidden', 'style', 'focusable', 'tabindex'].forEach(a => c.removeAttribute(a));
+    const size = {};
+    ['width', 'height'].forEach(a => { const v = parseFloat(c.getAttribute(a)); size[a] = v * EX; c.setAttribute(a, (v * EX).toFixed(2)); });
+    c.setAttribute('role', 'img');
+    c.setAttribute('aria-label', speechEl.textContent);
+    const text = new XMLSerializer().serializeToString(c).replace(/currentColor/g, '#000000');
+    return { text, w: size.width, h: size.height };
+  }
+  function svgElement(f) { return new DOMParser().parseFromString(f.text, 'image/svg+xml').documentElement; }
+  async function formulaPng(f, scale = 4) {
+    const pad = 8;
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([f.text], { type: 'image/svg+xml' }));
+    try {
+      img.src = url;
+      await img.decode();
+      const cv = document.createElement('canvas');
+      cv.width = Math.ceil((f.w + 2 * pad) * scale); cv.height = Math.ceil((f.h + 2 * pad) * scale);
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, pad * scale, pad * scale, f.w * scale, f.h * scale);
+      return await new Promise(r => cv.toBlob(r, 'image/png'));
+    } finally { URL.revokeObjectURL(url); }
+  }
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  function setImgButtons(on) { document.querySelectorAll('.img-action').forEach(b => { b.disabled = !on; }); }
+  const loadScript = src => new Promise((ok, fail) => {
+    if (document.querySelector(`script[src="${src}"]`)) return ok();
+    const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s);
+  });
+
+  $('copy-img').addEventListener('click', async () => {
+    const f = formulaSvg();
+    if (!f) return;
+    try {
+      if (!window.ClipboardItem || !navigator.clipboard?.write) throw new Error('brak');
+      await navigator.clipboard.write([new ClipboardItem({
+        'image/png': formulaPng(f),
+        'text/plain': new Blob([current], { type: 'text/plain' }),
+      })]);
+      say('Skopiowano obraz wzoru. Wklej go w Wordzie skrótem Cmd+V albo Ctrl+V.', 'ok');
+    } catch {
+      say('Ta przeglądarka nie pozwala kopiować obrazów. Pobierz wzór jako SVG albo PDF i wstaw go w Wordzie z pliku.', 'err');
+    }
+  });
+  $('dl-svg').addEventListener('click', () => {
+    const f = formulaSvg();
+    if (!f) return;
+    download(new Blob([f.text], { type: 'image/svg+xml' }), 'wzor.svg');
+    say('Pobrano wzór jako plik SVG (wzor.svg).', 'ok');
+  });
+  $('dl-pdf').addEventListener('click', async () => {
+    const f = formulaSvg();
+    if (!f) return;
+    const btn = $('dl-pdf');
+    btn.disabled = true;
+    say('Przygotowuję PDF…');
+    try {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js');
+      const pt = 0.75, pad = 12;
+      const W = f.w * pt + 2 * pad, H = f.h * pt + 2 * pad;
+      const doc = new window.jspdf.jsPDF({ unit: 'pt', format: [W, H], orientation: W > H ? 'l' : 'p' });
+      doc.setProperties({ title: 'Wzór — LatToText', subject: speechEl.textContent, keywords: current, creator: 'LatToText (ziemowitgil.pl/latex)' });
+      doc.setLanguage('pl-PL');
+      const el = svgElement(f);
+      document.body.appendChild(el);
+      el.style.position = 'absolute'; el.style.left = '-9999px';
+      try { await doc.svg(el, { x: pad, y: pad, width: f.w * pt, height: f.h * pt }); }
+      catch { const png = await formulaPng(f); const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(png); }); doc.addImage(data, 'PNG', pad, pad, f.w * pt, f.h * pt); }
+      finally { el.remove(); }
+      download(doc.output('blob'), 'wzor.pdf');
+      say('Pobrano wzór jako plik PDF (wzor.pdf).', 'ok');
+    } catch {
+      say('Nie udało się przygotować PDF-u. Sprawdź połączenie z internetem albo pobierz SVG.', 'err');
+    } finally { btn.disabled = !prev.querySelector('svg'); }
+  });
+
+  // ---------- Cały dokument (tryb bez „Tylko wzory”) ----------
+  let docName = 'dokument';
+  function showDocument(tex, name) {
+    docName = name.replace(/\.[^.]+$/, '') || 'dokument';
+    $('doc-code').textContent = tex;
+    $('doc-out').hidden = false;
+    $('doc-h').focus();
+  }
+  $('doc-copy').addEventListener('click', () => {
+    const t = $('doc-code').textContent;
+    try { navigator.clipboard.writeText(t).then(() => say('Skopiowano cały dokument.', 'ok'), () => say('Nie udało się skopiować. Zaznacz tekst i użyj Cmd+C albo Ctrl+C.', 'err')); }
+    catch { say('Nie udało się skopiować. Zaznacz tekst i użyj Cmd+C albo Ctrl+C.', 'err'); }
+  });
+  $('doc-dl').addEventListener('click', () => {
+    const full = '\\documentclass{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n\\usepackage[polish]{babel}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\n' + $('doc-code').textContent + '\n\n\\end{document}\n';
+    download(new Blob([full], { type: 'application/x-tex' }), docName + '.tex');
+    say('Pobrano plik ' + docName + '.tex — gotowy do skompilowania.', 'ok');
+  });
+  $('doc-close').addEventListener('click', () => { $('doc-out').hidden = true; input.focus(); });
+
+  // Kopiowanie
+  $('copy').addEventListener('click', () => {
+    if (!current) { say('Nie ma jeszcze nic do skopiowania.', 'err'); return; }
+    const fallback = () => {
+      const range = document.createRange(); range.selectNodeContents(codeEl);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      say('Wynik jest zaznaczony. Naciśnij Cmd+C albo Ctrl+C.');
+    };
+    const what = mode === 'to' ? 'kod LaTeX' : 'zwykły zapis';
+    try { navigator.clipboard.writeText(current).then(() => say(`Skopiowano ${what} do schowka.`, 'ok'), fallback); } catch { fallback(); }
+  });
+  // Jawna konwersja: wynik albo błąd ogłaszany czytnikowi ekranu (WCAG 4.1.3)
+  function convertNow() {
+    clearTimeout(t);
+    if (!input.value.trim()) { update(); say('Pole wzoru jest puste. Wpisz wzór i naciśnij Konwertuj.', 'err'); input.focus(); return; }
+    update();
+    const errs = [...errEl.querySelectorAll('li')].map(li => li.textContent);
+    if (errs.length) { say('Nie udało się przekonwertować. ' + errs.join(' '), 'err'); return; }
+    const noteTexts = [...$('notes').querySelectorAll('li')].map(li => li.textContent);
+    say(`Przekonwertowano${noteTexts.length ? ' z uwagami: ' + noteTexts.join(' ') : ''}. ${TEXT[mode].out}: ${current}. Odczyt słowny: ${speechEl.textContent}.`, 'ok');
+  }
+  $('convert').addEventListener('click', convertNow);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); convertNow(); }
+  });
+  $('clear').addEventListener('click', () => { input.value = ''; update(); input.focus(); say('Pole jest puste.'); });
+  document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {
+    setMode(r.value);
+    say(r.value === 'to' ? 'Tryb: zwykły zapis na LaTeX. Pole zawiera wzór w zwykłym zapisie.' : 'Tryb: LaTeX na zwykły zapis. Wklej kod LaTeX do pola.');
+  }));
+  input.addEventListener('input', schedule);
+  ['delim', 'mul', 'align', 'comma'].forEach(id => $(id).addEventListener('change', update));
+
+  // Stan startowy
+  const saved = load();
+  if (saved) {
+    Object.assign(drafts, saved.drafts || {});
+    if (saved.delim) $('delim').value = saved.delim;
+    if (saved.mul) $('mul').value = saved.mul;
+    $('align').checked = saved.align ?? true;
+    $('comma').checked = !!saved.comma;
+  }
+  // Linki z podstrony Przykłady: ?wzor=… (zwykły zapis), ?latex=… (LaTeX), ?przyklad=1 (odczyt przykładowego PDF-u)
+  const qs = new URLSearchParams(location.search);
+  if (qs.has('wzor')) setMode('to', qs.get('wzor'));
+  else if (qs.has('latex')) setMode('from', qs.get('latex'));
+  else setMode(saved?.mode === 'from' ? 'from' : 'to');
+  if (qs.has('wzor') || qs.has('latex')) { say('Wstawiono wzór z przykładów. Możesz go zmienić i skopiować wynik.', 'ok'); input.focus(); }
+  if (qs.has('wzor') || qs.has('latex') || qs.has('przyklad')) history.replaceState(null, '', location.pathname);
+
+  if (qs.has('przyklad')) setTimeout(() => $('sample-scan').click(), 300);
+
+  const onReady = async () => {
+    try { document.head.appendChild(MathJax.svgStylesheet()); } catch {}
+    mjReady = true;
+    update();
+    for (const [el, tex] of cheatMath) await renderMath(el, tex);
+  };
+  if (window.MathJax && window.MathJax.tex2svgPromise && window.MathJax.startup && window.MathJax.startup.document) onReady();
+  else window.__mjReady = onReady;
+  setTimeout(() => { if (!mjReady) prev.innerHTML = '<span class="placeholder">Podgląd się nie załadował. Wynik tekstowy poniżej działa normalnie.</span>'; }, 12000);
+})();
+</script>
+</body>
+</html>

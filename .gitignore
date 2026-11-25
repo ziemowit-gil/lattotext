@@ -1,0 +1,11 @@
+# sekrety i dane — nigdy do repozytorium
+.env
+*.sqlite
+*.sqlite-*
+data/
+secret.key
+# zależności i pliki budowane
+node_modules/
+pages/index.html
+.DS_Store
+web/sciezka.php

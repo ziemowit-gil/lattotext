@@ -1,0 +1,14 @@
+# Równania i LaTeX — ziemowitgil.pl/latex
+
+> Konwerter wzorów matematycznych: zwykły zapis (jak w kalkulatorze) ⇄ LaTeX, polski odczyt słowny dla czytników ekranu oraz odczyt odręcznych wzorów ze zdjęć kartek i skanów przez Claude API.
+
+API: POST https://ziemowitgil.pl/latex/api.php — JSON, wymaga tokenu użytkownika (Authorization: Bearer lx_…), CORS otwarty.
+
+- {"action":"to-latex","input":"..."} → {latex, speech, errors}
+- {"action":"from-latex","input":"..."} → {text, speech, errors}
+- {"action":"render","input":"...","from":"text|latex","format":"svg|png","scale":3} → obrazek
+- multipart action=scan, plik=@plik.jpg (JPG/PNG/WEBP/GIF/PDF, do 5 MB) → {latex, text, speech, warnings}
+
+Token tworzy zalogowany użytkownik na https://ziemowitgil.pl/latex/konto/. Linki GET do obrazków podpisuje akcja {"action":"sign", …parametry render}.
+GET na ten sam adres zwraca krótki opis akcji i limitów.
+Instrukcja dla Claude Code (umiejętność): https://ziemowitgil.pl/latex/SKILL.md

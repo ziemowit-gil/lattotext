@@ -1,0 +1,59 @@
+[
+ ["Algebra", [
+  "(a + b)^2 = a^2 + 2ab + b^2",
+  "a^2 - b^2 = (a - b)(a + b)",
+  "Delta = b^2 - 4ac",
+  "x = (-b +- sqrt(Delta)) / (2a)",
+  "x_1 + x_2 = -b/a, x_1 * x_2 = c/a",
+  "|x - 3| <= 2",
+  "log_a(x y) = log_a x + log_a y",
+  "a^(m/n) = root(n, a^m)"
+ ]],
+ ["Ciągi", [
+  "a_n = a_1 + (n - 1)r",
+  "S_n = (a_1 + a_n)/2 * n",
+  "a_n = a_1 q^(n - 1)",
+  "S_n = a_1 (1 - q^n)/(1 - q)"
+ ]],
+ ["Trygonometria", [
+  "sin^2 alpha + cos^2 alpha = 1",
+  "tg alpha = sin alpha / cos alpha",
+  "sin 2alpha = 2 sin alpha cos alpha",
+  "cos 2alpha = cos^2 alpha - sin^2 alpha",
+  "c^2 = a^2 + b^2 - 2ab cos gamma",
+  "a / sin alpha = 2R"
+ ]],
+ ["Analiza", [
+  "lim(n->inf, (1 + 1/n)^n) = e",
+  "lim(x->0, sin(x)/x) = 1",
+  "(f g)' = f' g + f g'",
+  "int(x^n, x) = x^(n+1)/(n+1) + C",
+  "int(0, 1, x^2, x) = 1/3",
+  "int(-inf, inf, e^(-x^2), x) = sqrt(pi)",
+  "sum(k=1, n, k) = n(n + 1)/2",
+  "sum(k=1, n, k^2) = n(n + 1)(2n + 1)/6",
+  "sum(n=0, inf, x^n/n!) = e^x",
+  "e^(i pi) + 1 = 0"
+ ]],
+ ["Kombinatoryka i statystyka", [
+  "binom(n, k) = n!/(k!(n - k)!)",
+  "P(A') = 1 - P(A)",
+  "E(X) = sum(i=1, n, x_i p_i)",
+  "sigma = sqrt(sum(i=1, n, (x_i - mu)^2)/n)"
+ ]],
+ ["Algebra liniowa", [
+  "A = mat(1, 2; 3, 4)",
+  "det(A) = ad - bc",
+  "vec(a) * vec(b) = |vec(a)| |vec(b)| cos phi",
+  "A^(-1) = 1/det(A) mat(d, -b; -c, a)"
+ ]],
+ ["Fizyka", [
+  "E = mc^2",
+  "v = s/t",
+  "E_k = (m v^2)/2",
+  "F = G (m_1 m_2)/r^2",
+  "pdiff(u, t) = k pdiff(u, x, 2)",
+  "nabla * vec(E) = rho/epsilon_0",
+  "Delta x Delta p >= hbar/2"
+ ]]
+]

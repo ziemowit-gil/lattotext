@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API – Równania i LaTeX</title>
+<meta name="description" content="API konwertera wzorów: zwykły zapis na LaTeX, LaTeX na zwykły zapis i odczyt wzorów z kartki przez Claude API.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root { --bg:#fff; --ink:#16191f; --muted:#4f5666; --line:#767d8c; --soft:#e3e6ec; --accent:#1a3db0; --code-bg:#f2f4f7; --danger:#a0101c; --ok:#1c6b34;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; }
+@media (prefers-color-scheme: dark) { :root { --bg:#14161b; --ink:#eceef2; --muted:#b1b7c4; --line:#8a92a3; --soft:#2c313b; --accent:#a9bcff; --code-bg:#1d2129; --danger:#ffa4ab; --ok:#8fdca6; color-scheme:dark; } }
+* { box-sizing:border-box; }
+html { background:var(--bg); }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:1.0625rem; line-height:1.6;
+  padding:2rem max(1rem, env(safe-area-inset-right,0px)) 4rem max(1rem, env(safe-area-inset-left,0px)); }
+main { max-width:46rem; margin:0 auto; display:flex; flex-direction:column; gap:2rem; }
+h1 { font-size:clamp(1.75rem,5vw,2.25rem); line-height:1.2; margin:0; }
+h2 { font-size:1.25rem; margin:0 0 .5rem; }
+h3 { font-size:1.0625rem; margin:1.25rem 0 .5rem; }
+p { margin:0; } p + p { margin-top:.75rem; }
+a { color:var(--accent); text-underline-offset:3px; }
+:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+.skip { position:absolute; left:-9999px; top:1rem; background:var(--bg); color:var(--accent); padding:.5rem .75rem; }
+.skip:focus { left:1rem; }
+.lead { color:var(--muted); margin-top:.5rem; }
+section { border-top:1px solid var(--soft); padding-top:1.5rem; }
+pre { margin:.5rem 0 0; padding:.75rem 1rem; background:var(--code-bg); border-radius:4px; font:.9rem/1.6 var(--f-mono); white-space:pre-wrap; word-break:break-word; }
+code { font-family:var(--f-mono); font-size:.92em; background:var(--code-bg); padding:.05rem .3rem; border-radius:3px; }
+pre code { background:none; padding:0; }
+.scroll { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-size:.95rem; }
+caption { text-align:left; font-weight:600; padding:.5rem 0; }
+th, td { text-align:left; padding:.4rem .75rem .4rem 0; border-bottom:1px solid var(--soft); vertical-align:top; }
+th { border-bottom:2px solid var(--line); font-weight:600; }
+form { display:flex; flex-direction:column; gap:.75rem; }
+fieldset { border:0; margin:0; padding:0; min-width:0; }
+legend { font-weight:600; margin-bottom:.25rem; padding:0; }
+.radio { display:inline-flex; align-items:center; gap:.5rem; min-height:2.75rem; margin-right:1.25rem; cursor:pointer; }
+.radio input { width:1.25rem; height:1.25rem; margin:0; accent-color:var(--accent); }
+label.big { font-weight:600; }
+textarea { width:100%; min-height:6rem; padding:.75rem; font:1rem/1.6 var(--f-mono); color:var(--ink); background:var(--bg); border:2px solid var(--line); border-radius:4px; resize:vertical; }
+textarea:focus-visible { border-color:var(--accent); outline-offset:0; }
+button { font:inherit; min-height:2.75rem; padding:.5rem 1rem; border-radius:4px; border:2px solid var(--ink); background:var(--ink); color:var(--bg); cursor:pointer; align-self:flex-start; }
+button:hover { background:var(--accent); border-color:var(--accent); }
+.hint { color:var(--muted); font-size:.95rem; }
+.sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+footer { color:var(--muted); font-size:.95rem; border-top:1px solid var(--soft); padding-top:1rem; }
+</style>
+</head>
+<body>
+<a class="skip" href="#try">Przejdź do wypróbowania API</a>
+<main>
+  <header>
+    <p><a href="./">← Wróć do konwertera</a> · <a href="przyklady.html">Przykłady</a> · <a href="konto/">Moje konto</a> · <a href="konto/klient.php">Klient HTTP</a></p>
+    <h1 style="margin-top:1rem">API konwertera wzorów</h1>
+    <p class="lead">Jeden adres, odpowiedzi w JSON albo obrazek. Każdy użytkownik ma własny klucz (token). Każda odpowiedź ma też polski odczyt słowny wzoru dla czytników ekranu.</p>
+  </header>
+
+  <section aria-labelledby="addr-h">
+    <h2 id="addr-h">Adres</h2>
+    <pre translate="no"><code>POST https://ziemowitgil.pl/latex/api.php</code></pre>
+    <p style="margin-top:.75rem">W przykładach token jest w zmiennej: <code>export TOKEN=lx_…</code>. Ten sam adres otwarty w przeglądarce pokazuje tę stronę. Programy, które nie proszą o HTML, dostają krótki opis w JSON.</p>
+  </section>
+
+  <section aria-labelledby="act-h">
+    <h2 id="act-h">Akcje</h2>
+    <div class="scroll">
+      <table>
+        <caption class="sr">Dostępne akcje API</caption>
+        <thead><tr><th scope="col">Akcja</th><th scope="col">Wejście</th><th scope="col">Odpowiedź</th></tr></thead>
+        <tbody>
+          <tr><td><code>to-latex</code></td><td>JSON: <code>input</code> — wzór w zwykłym zapisie; opcjonalnie <code>options</code></td><td><code>latex</code>, <code>speech</code>, <code>errors</code></td></tr>
+          <tr><td><code>from-latex</code></td><td>JSON: <code>input</code> — kod LaTeX</td><td><code>text</code>, <code>speech</code>, <code>errors</code></td></tr>
+          <tr><td><code>render</code></td><td>GET albo POST: <code>input</code>, <code>from</code> (<code>latex</code> lub <code>text</code>), <code>format</code> (<code>svg</code> lub <code>png</code>), opcjonalnie <code>scale</code> (1–8), <code>color</code>, <code>background</code></td><td>obrazek wzoru; nagłówki <code>X-Formula-Latex</code> i <code>X-Formula-Speech</code></td></tr>
+          <tr><td><code>scan</code></td><td>multipart: plik w polu <code>plik</code> (JPG, PNG, WEBP, GIF, PDF do 5 MB) albo JSON z <code>media_type</code> i <code>data</code> w base64</td><td><code>latex</code>, <code>text</code>, <code>speech</code>, <code>warnings</code>, <code>mode</code>. Pole <code>only_math</code>: <code>1</code> (domyślnie) — tylko wzory, tekst niematematyczny pominięty; <code>0</code> — cały dokument w LaTeX-u (wtedy <code>text</code> i <code>speech</code> są puste). Pole <code>pages</code> (tylko PDF): które strony odczytać, np. <code>1-3,5</code>; bez pola — wszystkie. Odpowiedź ma wtedy <code>pages_read</code> i <code>page_count</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Opcje dla to-latex</h3>
+    <p><code>mul</code>: <code>cdot</code>, <code>times</code> albo <code>none</code> (znak mnożenia dla *), <code>align</code>: wyrównanie kolejnych linii do =, <code>comma</code>: polski przecinek dziesiętny.</p>
+    <h3>Klucz API</h3>
+    <p>Każde zapytanie wymaga tokenu użytkownika w nagłówku <code>Authorization: Bearer lx_…</code>. Token tworzysz po zalogowaniu na stronie <a href="konto/">Moje konto</a>. Konta zakłada administrator, który może też wyłączyć dostęp do API wybranej osobie. Odczyty z kartki liczą się do Twojego dziennego limitu i trafiają do Twojej historii.</p>
+    <p>Linki GET do obrazków (<code>?action=render…</code>) muszą być podpisane. Podpisany link tworzy akcja <code>sign</code> z tymi samymi parametrami co <code>render</code> albo przycisk „Kopiuj link do obrazka” w <a href="konto/klient.php">kliencie HTTP</a>.</p>
+    <h3>Odczyt z kartki</h3>
+    <p>Akcja <code>scan</code> wysyła obraz do Claude API (model Claude Opus 5.5), który przepisuje odręczne lub drukowane wzory do LaTeX-a. Odpowiedź może trwać do pół minuty. Bez konta obowiązuje dzienny limit odczytów na adres IP. Zarejestrowani użytkownicy mogą też wysyłać zdjęcia mailem.</p>
+  </section>
+
+  <section aria-labelledby="ex-h">
+    <h2 id="ex-h">Przykłady</h2>
+    <h3>Zwykły zapis → LaTeX</h3>
+<pre translate="no"><code>curl -s https://ziemowitgil.pl/latex/api.php \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"action":"to-latex","input":"x = (-b +- sqrt(b^2-4ac))/(2a)"}'</code></pre>
+    <h3>LaTeX → zwykły zapis</h3>
+<pre translate="no"><code>jq -n --arg s '\frac{a}{b} + \sqrt{x}' '{action:"from-latex", input:$s}' \
+  | curl -s https://ziemowitgil.pl/latex/api.php -H "Authorization: Bearer $TOKEN" \
+      -H 'Content-Type: application/json' -d @-</code></pre>
+    <h3>Wzór → obrazek PNG lub SVG</h3>
+<pre translate="no"><code>curl -s https://ziemowitgil.pl/latex/api.php \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"action":"render","input":"sqrt(x^2+y^2)","from":"text","format":"png","scale":4}' \
+  -o wzor.png</code></pre>
+    <p style="margin-top:.5rem">Podpisany link do wstawienia jako <code>&lt;img src&gt;</code>:</p>
+<pre translate="no"><code>curl -s https://ziemowitgil.pl/latex/api.php -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"action":"sign","input":"a/b","from":"text","format":"svg"}'
+# → {"url": "https://ziemowitgil.pl/latex/api.php?action=render&amp;…&amp;u=…&amp;sig=…"}</code></pre>
+    <h3>Zdjęcie kartki → LaTeX</h3>
+<pre translate="no"><code>curl -s https://ziemowitgil.pl/latex/api.php \
+  -H "Authorization: Bearer $TOKEN" -F action=scan -F plik=@kartka.jpg</code></pre>
+    <h3>Przykładowa odpowiedź</h3>
+<pre translate="no"><code>{
+  "latex": "x = \\frac{-b \\pm \\sqrt{b^{2} - 4ac}}{2a}",
+  "speech": "x równa się ułamek, licznik: minus b plus minus pierwiastek z …",
+  "errors": []
+}</code></pre>
+  </section>
+
+  <section aria-labelledby="err-h">
+    <h2 id="err-h">Błędy</h2>
+    <p>Błąd ma pole <code>error</code> z opisem po polsku. Błędy składni wzoru wracają w liście <code>errors</code> z numerem linii i znaku.</p>
+    <div class="scroll">
+      <table>
+        <caption class="sr">Kody odpowiedzi</caption>
+        <thead><tr><th scope="col">Kod</th><th scope="col">Znaczenie</th></tr></thead>
+        <tbody>
+          <tr><td>400</td><td>Brakuje danych, zły JSON albo nieznana akcja.</td></tr>
+          <tr><td>401</td><td>Brak tokenu, nieprawidłowy token, zablokowane konto albo niepodpisany link do obrazka.</td></tr>
+          <tr><td>403</td><td>Administrator wyłączył dostęp do API dla tego konta.</td></tr>
+          <tr><td>413</td><td>Plik ponad 5 MB albo tekst ponad 20 000 znaków.</td></tr>
+          <tr><td>415</td><td>Nieobsługiwany format pliku. Zdjęcia HEIC zapisz jako JPG.</td></tr>
+          <tr><td>422</td><td>Nie znaleziono wzoru albo nie da się go odczytać.</td></tr>
+          <tr><td>429</td><td>Wykorzystany dzienny limit odczytów albo chwilowa blokada serwera.</td></tr>
+          <tr><td>503</td><td>Odczyt z kartki jest wyłączony (brak klucza Claude API na serwerze).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="py-h">
+    <h2 id="py-h">Skrypt w Pythonie</h2>
+    <p>Wysyłaj pliki z wiersza poleceń, bez przeglądarki. Skrypt potrzebuje tylko Pythona 3.8 lub nowszego, bez dodatkowych pakietów.</p>
+    <p style="margin-top:.75rem"><a href="latexconverter.py" download>Pobierz latexconverter.py</a> <span class="hint">(9 KB)</span></p>
+<pre translate="no"><code>export LATEX_TOKEN=lx_…            # token z Mojego konta
+python latexconverter.py kartka.jpg            # zapyta: tylko wzory czy cały dokument
+python latexconverter.py kartka.jpg --tylko-wzory
+python latexconverter.py skrypt.pdf --tylko-wzory --strony 2-4
+python latexconverter.py notatki.pdf --caly-dokument -o notatki.tex
+python latexconverter.py wzory.txt             # zwykły zapis → LaTeX
+python latexconverter.py wzor.tex              # LaTeX → zwykły zapis
+python latexconverter.py wzory.txt --obrazek png -o wzor.png
+python latexconverter.py --help                # wszystkie opcje</code></pre>
+    <p style="margin-top:.75rem">Skrypt rozpoznaje rodzaj pliku po rozszerzeniu: JPG, PNG, WEBP, GIF i PDF idą do odczytu przez AI, <code>.tex</code> do zamiany na zwykły zapis, pozostałe pliki tekstowe do zamiany na LaTeX.</p>
+  </section>
+
+  <section aria-labelledby="cc-h">
+    <h2 id="cc-h">Claude Code</h2>
+    <p>Dodaj umiejętność, a Claude Code sam użyje tego API, gdy poprosisz o LaTeX dla wzoru, zamianę LaTeX-a albo przepisanie wzorów ze zdjęcia kartki:</p>
+<pre translate="no"><code>mkdir -p ~/.claude/skills/rownania-latex
+curl -so ~/.claude/skills/rownania-latex/SKILL.md https://ziemowitgil.pl/latex/SKILL.md</code></pre>
+    <p style="margin-top:.75rem">Opis dla modeli językowych: <a href="llms.txt">llms.txt</a>. Treść umiejętności: <a href="SKILL.md">SKILL.md</a>.</p>
+  </section>
+
+  <section aria-labelledby="try">
+    <h2 id="try" tabindex="-1">Wypróbuj</h2>
+    <form id="tryform" novalidate>
+      <fieldset>
+        <legend>Akcja</legend>
+        <label class="radio"><input type="radio" name="action" value="to-latex" checked> to-latex</label>
+        <label class="radio"><input type="radio" name="action" value="from-latex"> from-latex</label>
+      </fieldset>
+      <label class="big" for="try-token">Token API</label>
+      <input type="password" id="try-token" autocomplete="off" spellcheck="false" aria-describedby="try-token-h" style="font:inherit;padding:.6rem;border:2px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);min-height:2.75rem">
+      <p class="hint" id="try-token-h">Token z <a href="konto/">Mojego konta</a>. Gdy jesteś zalogowany, możesz zostawić to pole puste.</p>
+      <label class="big" for="try-input">Wejście</label>
+      <textarea id="try-input" translate="no" aria-describedby="try-hint">sum(k=1, n, k) = n(n+1)/2</textarea>
+      <p class="hint" id="try-hint">Formularz wysyła prawdziwe zapytanie POST i pokazuje odpowiedź serwera. Odczyt z kartki wypróbujesz na stronie konwertera.</p>
+      <button type="submit">Wyślij zapytanie</button>
+    </form>
+    <h3 id="res-h">Odpowiedź</h3>
+    <p class="hint" id="res-status" role="status"></p>
+    <pre id="res" aria-labelledby="res-h" tabindex="0" translate="no">—</pre>
+  </section>
+
+  <footer>
+    <p><strong>LatToText</strong> · <a href="https://ziemowitgil.pl/latex/">strona projektu</a> · Projekt i wykonanie: <a href="https://ziemowitgil.pl/">Ziemowit Gil</a></p>
+  </footer>
+</main>
+<script>
+document.getElementById('tryform').addEventListener('submit', async e => {
+  e.preventDefault();
+  const action = document.querySelector('input[name=action]:checked').value;
+  const input = document.getElementById('try-input').value;
+  const st = document.getElementById('res-status'), res = document.getElementById('res');
+  st.textContent = 'Wysyłam zapytanie…';
+  try {
+    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    const tok = document.getElementById('try-token').value.trim();
+    if (tok) headers.Authorization = 'Bearer ' + tok;
+    const r = await fetch('api.php', { method: 'POST', headers, credentials: 'same-origin', body: JSON.stringify({ action, input }) });
+    const txt = await r.text();
+    let pretty = txt; try { pretty = JSON.stringify(JSON.parse(txt), null, 2); } catch {}
+    res.textContent = pretty;
+    st.textContent = `Serwer odpowiedział kodem ${r.status}${r.ok ? '' : ' (błąd)'}. Odpowiedź jest poniżej.`;
+  } catch {
+    st.textContent = 'Nie udało się połączyć z API. Sprawdź połączenie i spróbuj ponownie.';
+  }
+});
+</script>
+</body>
+</html>
