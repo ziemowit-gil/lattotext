@@ -130,6 +130,13 @@ pre code { background: none; padding: 0; }
 .howto { border-top: 1px solid var(--soft); padding-top: 1.5rem; }
 .steps { margin: .5rem 0 0; padding-left: 1.4rem; display: flex; flex-direction: column; gap: .5rem; }
 .filebtn { text-decoration: none; }
+.seg { display: inline-flex; flex-wrap: wrap; padding: 0; margin: 0; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; align-self: flex-start; }
+.seg label { display: inline-block; line-height: 1.4; padding: .7rem 1rem; min-height: 2.75rem; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.seg label + label { border-left: 2px solid var(--ink); }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label:has(input:checked) { background: var(--ink); color: var(--bg); }
+.seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: -5px; }
+button.small { font-size: .9375rem; padding: .4rem .8rem; }
 .linkbtn { background: none; border: 0; padding: 0; min-height: 1.5rem; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font: inherit; cursor: pointer; display: inline; }
 .linkbtn:hover { color: var(--accent); border: 0; }
 button[disabled].img-action { opacity: .45; cursor: not-allowed; }
@@ -157,12 +164,10 @@ footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--s
     <p class="lead">Wpisz wzór jak w kalkulatorze, wklej LaTeX albo pokaż zdjęcie kartki.</p>
   </header>
 
-  <fieldset>
-    <legend>Kierunek</legend>
-    <div class="mode">
-      <label class="radio"><input type="radio" name="mode" value="to" id="mode-to" checked> Zwykły zapis <span aria-hidden="true">→</span><span class="sr">na</span> LaTeX</label>
-      <label class="radio"><input type="radio" name="mode" value="from" id="mode-from"> LaTeX <span aria-hidden="true">→</span><span class="sr">na</span> zwykły zapis</label>
-    </div>
+  <fieldset class="seg">
+    <legend class="sr">Kierunek konwersji</legend>
+    <label><input type="radio" name="mode" value="to" id="mode-to" checked> Zapis <span aria-hidden="true">→</span><span class="sr">na</span> LaTeX</label>
+    <label><input type="radio" name="mode" value="from" id="mode-from"> LaTeX <span aria-hidden="true">→</span><span class="sr">na</span> zapis</label>
   </fieldset>
 
   <div class="field" id="drop">
@@ -170,7 +175,7 @@ footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--s
     <p class="hint" id="eq-hint"></p>
     <textarea id="eq" spellcheck="false" autocomplete="off" autocapitalize="off" translate="no" aria-describedby="eq-hint errors" aria-keyshortcuts="Meta+Enter Control+Enter"></textarea>
     <div class="buttons">
-      <button type="button" class="primary" id="convert" aria-describedby="convert-hint">Konwertuj</button>
+      <button type="button" class="primary" id="convert" aria-describedby="convert-hint" title="Cmd+Enter / Ctrl+Enter">Konwertuj</button>
       <input type="file" id="camera-file" class="sr" accept="image/*" capture="environment" aria-describedby="scan-hint">
       <label for="camera-file" class="filebtn camera" id="camera-btn">Zrób zdjęcie kartki</label>
       <input type="file" id="scan-file" class="sr" accept="image/*,application/pdf" aria-describedby="scan-hint">
@@ -178,7 +183,7 @@ footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--s
       <button type="button" id="clear" aria-describedby="clear-hint">Wyczyść</button>
       <span class="sr" id="clear-hint">Usuwa całą treść pola wzoru.</span>
     </div>
-    <p class="hint" id="convert-hint">Skrót: Cmd+Enter albo Ctrl+Enter.</p>
+    <span class="sr" id="convert-hint">Skrót w polu wzoru: Cmd+Enter albo Ctrl+Enter.</span>
     <dialog class="upload" id="upload-box" aria-labelledby="upload-box-h">
       <h2 id="upload-box-h">Odczyt pliku</h2>
       <div class="prow"><label for="up-bar">Wysyłanie pliku</label><span class="pct" id="up-bar-pct" aria-hidden="true">0%</span></div>
@@ -189,7 +194,7 @@ footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--s
       <p class="hint" id="ai-bar-info"></p>
       <button type="button" class="abort" id="upload-box-abort">Przerwij</button>
     </dialog>
-    <p class="hint" id="scan-hint">Zdjęcie kartki odczytuje AI (Claude API). Możesz je też przeciągnąć na pole, wkleić albo wysłać mailem na latex@dpoczta.pl. <button type="button" class="linkbtn" id="sample-scan" data-file="przyklad-krotki.pdf">Wypróbuj na przykładowym pliku</button></p>
+    <p class="hint" id="scan-hint">Zdjęcie lub PDF odczyta AI. Plik możesz też przeciągnąć na pole. <button type="button" class="linkbtn" id="sample-scan" data-file="przyklad-krotki.pdf">Wypróbuj na przykładzie</button></p>
   </div>
 
   <section class="output" id="output" aria-labelledby="out-h" aria-busy="false">
@@ -202,11 +207,11 @@ footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--s
     <pre id="code" aria-labelledby="code-h" tabindex="0" translate="no"></pre>
     <div class="buttons">
       <button type="button" class="primary" id="copy">Kopiuj kod LaTeX</button>
-      <button type="button" class="img-action" id="copy-img" aria-describedby="img-hint" disabled>Kopiuj obraz do Worda</button>
-      <button type="button" class="img-action" id="dl-svg" aria-describedby="img-hint" disabled>Pobierz SVG</button>
-      <button type="button" class="img-action" id="dl-pdf" aria-describedby="img-hint" disabled>Pobierz PDF</button>
+      <button type="button" class="img-action small" id="copy-img" aria-describedby="img-hint" title="Wklej w Wordzie, Google Docs albo prezentacji" disabled>Kopiuj obraz</button>
+      <button type="button" class="img-action small" id="dl-svg" aria-label="Pobierz wzór jako SVG" disabled>SVG</button>
+      <button type="button" class="img-action small" id="dl-pdf" aria-label="Pobierz wzór jako PDF" disabled>PDF</button>
     </div>
-    <p class="hint" id="img-hint">Obraz wzoru: wklej do Worda, Google Docs albo prezentacji. SVG i PDF są wektorowe, więc nie tracą ostrości.</p>
+    <span class="sr" id="img-hint">Kopiuje wzór jako obrazek do wklejenia w Wordzie, Google Docs albo prezentacji.</span>
     <p class="status" id="status" role="status"></p>
     <p class="sr" id="err-live" aria-live="polite"></p>
     <p class="status err" id="alert" role="alert"></p>
