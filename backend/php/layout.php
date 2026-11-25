@@ -20,6 +20,9 @@ function page_start(string $title, ?array $u, string $active = ''): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> – Równania i LaTeX</title>
+<link rel="icon" href="/latex/lattotext-ikona.svg" type="image/svg+xml">
+<link rel="icon" href="/latex/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/latex/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root { --bg:#fff; --ink:#16191f; --muted:#4f5666; --line:#767d8c; --soft:#e3e6ec; --accent:#1a3db0; --code-bg:#f2f4f7; --danger:#a0101c; --ok:#1c6b34;
@@ -78,6 +81,9 @@ pre { background:var(--code-bg); padding:.75rem 1rem; border-radius:4px; white-s
 .stats div { display:flex; flex-direction:column; }
 .stats b { font-size:1.5rem; font-variant-numeric:tabular-nums; }
 .confirm { border:2px solid var(--danger); padding:1rem; border-radius:4px; display:flex; flex-direction:column; gap:.75rem; }
+.brandbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1.25rem; margin-bottom: .75rem; }
+.brand { display: inline-flex; align-items: center; min-height: 2.75rem; border-radius: 4px; }
+.brand img { height: 3.4rem; width: auto; display: block; }
 .tabs ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.5rem; border-bottom:2px solid var(--soft); }
 .tabs a { display:inline-flex; align-items:center; min-height:2.75rem; padding:0 .9rem; text-decoration:none; border:2px solid transparent; border-bottom:0; border-radius:4px 4px 0 0; }
 .tabs a[aria-current="page"] { border-color:var(--soft); background:var(--code-bg); color:var(--ink); font-weight:600; }
@@ -87,7 +93,8 @@ pre { background:var(--code-bg); padding:.75rem 1rem; border-radius:4px; white-s
 <body>
 <a class="skip" href="#tresc">Przejdź do treści</a>
 <div class="wrap">
-<header>
+<header class="brandbar">
+  <a class="brand" href="/latex/"><picture><source srcset="/latex/lattotext-logo-ciemne.svg" media="(prefers-color-scheme: dark)"><img src="/latex/lattotext-logo.svg" alt="LatToText — strona główna" width="160" height="40"></picture></a>
   <nav aria-label="Główna">
     <ul>
       <?php foreach ($links as [$href, $label, $key]): ?>

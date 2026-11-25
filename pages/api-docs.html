@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>API – Równania i LaTeX</title>
 <meta name="description" content="API konwertera wzorów: zwykły zapis na LaTeX, LaTeX na zwykły zapis i odczyt wzorów z kartki przez Claude API.">
+<link rel="icon" href="/latex/lattotext-ikona.svg" type="image/svg+xml">
+<link rel="icon" href="/latex/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/latex/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root { --bg:#fff; --ink:#16191f; --muted:#4f5666; --line:#767d8c; --soft:#e3e6ec; --accent:#1a3db0; --code-bg:#f2f4f7; --danger:#a0101c; --ok:#1c6b34;
@@ -24,6 +27,9 @@ a { color:var(--accent); text-underline-offset:3px; }
 .skip { position:absolute; left:-9999px; top:1rem; background:var(--bg); color:var(--accent); padding:.5rem .75rem; }
 .skip:focus { left:1rem; }
 .lead { color:var(--muted); margin-top:.5rem; }
+.brandbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1.25rem; margin-bottom: .75rem; }
+.brand { display: inline-flex; align-items: center; min-height: 2.75rem; border-radius: 4px; }
+.brand img { height: 3.4rem; width: auto; display: block; }
 section { border-top:1px solid var(--soft); padding-top:1.5rem; }
 pre { margin:.5rem 0 0; padding:.75rem 1rem; background:var(--code-bg); border-radius:4px; font:.9rem/1.6 var(--f-mono); white-space:pre-wrap; word-break:break-word; }
 code { font-family:var(--f-mono); font-size:.92em; background:var(--code-bg); padding:.05rem .3rem; border-radius:3px; }
@@ -52,6 +58,7 @@ footer { color:var(--muted); font-size:.95rem; border-top:1px solid var(--soft);
 <a class="skip" href="#try">Przejdź do wypróbowania API</a>
 <main>
   <header>
+    <div class="brandbar"><a class="brand" href="/latex/"><picture><source srcset="/latex/lattotext-logo-ciemne.svg" media="(prefers-color-scheme: dark)"><img src="/latex/lattotext-logo.svg" alt="LatToText — strona główna" width="160" height="40"></picture></a></div>
     <p><a href="./">← Wróć do konwertera</a> · <a href="przyklady.html">Przykłady</a> · <a href="konto/">Moje konto</a> · <a href="konto/klient.php">Klient HTTP</a></p>
     <h1 style="margin-top:1rem">API konwertera wzorów</h1>
     <p class="lead">Jeden adres, odpowiedzi w JSON albo obrazek. Każdy użytkownik ma własny klucz (token). Każda odpowiedź ma też polski odczyt słowny wzoru dla czytników ekranu.</p>

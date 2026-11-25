@@ -61,6 +61,9 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Przykłady wzorów – LatToText</title>
 <meta name="description" content="${n} przykładowych wzorów: zwykły zapis, kod LaTeX, podgląd i polski odczyt słowny. Pliki PDF do wypróbowania odczytu z kartki.">
+<link rel="icon" href="/latex/lattotext-ikona.svg" type="image/svg+xml">
+<link rel="icon" href="/latex/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/latex/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root { --bg:#fff; --ink:#16191f; --muted:#4f5666; --line:#767d8c; --soft:#e3e6ec; --accent:#1a3db0; --code-bg:#f2f4f7;
@@ -81,7 +84,10 @@ a { color:var(--accent); text-underline-offset:3px; }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
 .hint { color:var(--muted); font-size:.95rem; }
 .lead { color:var(--muted); margin-top:.5rem; max-width:62ch; }
-.topnav { display:flex; flex-wrap:wrap; gap:.25rem 1.25rem; margin-bottom:.75rem; }
+.brandbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1.25rem; margin-bottom: .75rem; }
+.brand { display: inline-flex; align-items: center; min-height: 2.75rem; border-radius: 4px; }
+.brand img { height: 3.4rem; width: auto; display: block; }
+.topnav { display:flex; flex-wrap:wrap; gap:.25rem 1.25rem; }
 .topnav a { display:inline-flex; align-items:center; min-height:2.75rem; }
 .topnav a[aria-current="page"] { color:var(--ink); font-weight:600; text-decoration:none; }
 .buttons { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:.75rem; }
@@ -108,7 +114,10 @@ footer { color:var(--muted); font-size:.95rem; border-top:1px solid var(--soft);
 <a class="skip" href="#lista">Przejdź do przykładów</a>
 <main>
   <header>
-    <nav aria-label="Główna" class="topnav"><a href="./">Konwerter</a><a href="przyklady.html" aria-current="page">Przykłady</a><a href="api.php">API</a><a href="konto/">Moje konto</a></nav>
+    <div class="brandbar">
+      <a class="brand" href="/latex/"><picture><source srcset="/latex/lattotext-logo-ciemne.svg" media="(prefers-color-scheme: dark)"><img src="/latex/lattotext-logo.svg" alt="LatToText — strona główna" width="160" height="40"></picture></a>
+      <nav aria-label="Główna" class="topnav"><a href="./">Konwerter</a><a href="przyklady.html" aria-current="page">Przykłady</a><a href="api.php">API</a><a href="konto/">Moje konto</a></nav>
+    </div>
     <h1>Przykłady wzorów</h1>
     <p class="lead">${n} wzorów z liceum i pierwszych lat studiów. Przy każdym jest zwykły zapis do wpisania w konwerterze, kod LaTeX i odczyt słowny. Kliknij „Otwórz w konwerterze”, żeby zmieniać wzór i kopiować wynik.</p>
   </header>

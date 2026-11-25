@@ -1,5 +1,7 @@
 # LatToText
 
+![LatToText](logo/lattotext-logo.svg)
+
 Konwerter wzorów matematycznych: zwykły zapis ⇄ LaTeX, polski odczyt słowny dla czytników ekranu i odczyt wzorów z kartek, zdjęć i PDF-ów przez Claude API.
 
 Działa pod adresem https://ziemowitgil.pl/latex/ (dostęp po zalogowaniu).
@@ -23,7 +25,8 @@ Działa pod adresem https://ziemowitgil.pl/latex/ (dostęp po zalogowaniu).
 | `web/` | publiczne pliki: `api.php`, bramka logowania `gate.php`, `konto/`, `admin/`, `odczyt.js`, skrypt i opisy | katalog strony, np. `public_html/latex/` |
 | `pages/` | strony i pliki za bramką: szablon strony głównej, przykłady, dokumentacja API, przykładowe PDF-y | `latex-api/web/` (poza katalogiem publicznym) |
 | `backend/` | `converter.js` (parser w obie strony + odczyt słowny), `cli.cjs` (Node: konwersje, Claude API, render SVG/PNG, wybór stron PDF), `php/` (baza, konta, limity, poczta), `bin/` (cron, konta z CLI) | `latex-api/` |
-| `tools/` | budowanie strony głównej, generatory przykładowych PDF-ów i strony przykładów | lokalnie |
+| `tools/` | budowanie strony głównej, generatory przykładowych PDF-ów, strony przykładów i logo | lokalnie |
+| `logo/` | logo i ikona (SVG, wersje jasne i ciemne) | `web/` zawiera kopie do strony |
 
 ## Instalacja
 

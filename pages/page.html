@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Równania i LaTeX – konwerter</title>
 <meta name="description" content="Zamień wzór zapisany jak w kalkulatorze na LaTeX albo LaTeX na zwykły zapis. Rozpoznaje też wzory ze zdjęć i skanów.">
+<link rel="icon" href="/latex/lattotext-ikona.svg" type="image/svg+xml">
+<link rel="icon" href="/latex/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/latex/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Jedna kolumna, zwykła kartka. Kontrasty sprawdzone pod WCAG 2.2 AA (tekst ≥ 4,5:1, obramowania ≥ 3:1). */
@@ -41,7 +44,10 @@ h3 { font-size: 1.0625rem; margin: 1.25rem 0 .5rem; }
 p { margin: 0; }
 p + p { margin-top: .75rem; }
 .lead { color: var(--muted); margin-top: .5rem; }
-.topnav { display: flex; gap: 1.25rem; justify-content: flex-end; margin-bottom: .5rem; }
+.brandbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1.25rem; margin-bottom: .75rem; }
+.brand { display: inline-flex; align-items: center; min-height: 2.75rem; border-radius: 4px; }
+.brand img { height: 3.4rem; width: auto; display: block; }
+.topnav { display: flex; gap: 1.25rem; justify-content: flex-end; }
 .topnav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 a { color: var(--accent); text-underline-offset: 3px; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -159,7 +165,10 @@ footer { color: var(--muted); font-size: .9375rem; border-top: 1px solid var(--s
 <noscript><p style="padding:1rem;border:2px solid currentColor">Konwerter działa w przeglądarce i potrzebuje włączonego JavaScriptu. API opisane w <a href="llms.txt">llms.txt</a> działa bez niego.</p></noscript>
 <main>
   <header>
-    <nav aria-label="Główna" class="topnav"><a href="przyklady.html">Przykłady</a> <a href="api.php">API</a> <a href="konto/">Moje konto</a></nav>
+    <div class="brandbar">
+      <a class="brand" href="/latex/"><picture><source srcset="/latex/lattotext-logo-ciemne.svg" media="(prefers-color-scheme: dark)"><img src="/latex/lattotext-logo.svg" alt="LatToText — strona główna" width="160" height="40"></picture></a>
+      <nav aria-label="Główna" class="topnav"><a href="przyklady.html">Przykłady</a> <a href="api.php">API</a> <a href="konto/">Moje konto</a></nav>
+    </div>
     <h1>Równania i LaTeX</h1>
     <p class="lead">Wpisz wzór jak w kalkulatorze, wklej LaTeX albo pokaż zdjęcie kartki.</p>
   </header>
